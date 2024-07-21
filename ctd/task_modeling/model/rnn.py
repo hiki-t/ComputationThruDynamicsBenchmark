@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from torch.nn import GRUCell, RNNCell
+from torch.nn import GRUCell, RNNCell, LSTMCell
 
 """
 All models must meet a few requirements
@@ -180,3 +180,45 @@ class Vanilla_RNN(nn.Module):
         hidden = self.cell(inputs, hidden)
         output = self.readout(hidden)
         return output, hidden
+
+
+class LSTM_RNN(nn.Module):
+    def __init__(
+        self, latent_size, input_size=None, output_size=None,
+        latent_ic_var=0.05
+    ):
+        super().__init__()
+        self.input_size = input_size
+        self.latent_size = latent_size
+        self.output_size = output_size
+        self.cell = None
+        self.readout = None
+        self.latent_ics = torch.nn.Parameter(
+            torch.zeros(latent_size), requires_grad=True
+        )
+        self.latent_ics2 = torch.nn.Parameter(
+            torch.zeros(latent_size), requires_grad=True
+        )
+        self.latent_ic_var = latent_ic_var
+
+    def init_model(self, input_size, output_size):
+        self.input_size = input_size
+        self.output_size = output_size
+        self.cell = LSTMCell(input_size, self.latent_size)
+        self.readout = nn.Linear(self.latent_size, output_size, bias=True)
+
+    def init_hidden(self, batch_size):
+        init_h = self.latent_ics.unsqueeze(0).expand(batch_size, -1)
+        ic_noise = torch.randn_like(init_h) * self.latent_ic_var
+        return init_h + ic_noise
+
+    def init_cx(self, batch_size):
+        init_cx = self.latent_ics2.unsqueeze(0).expand(batch_size, -1)
+        ic_noise = torch.randn_like(init_cx) * self.latent_ic_var
+        return init_cx + ic_noise
+
+    def forward(self, inputs, (hidden,cx)):
+        hidden, cx = self.cell(inputs, (hidden,cx))
+        output = self.readout(hidden)
+        return output, (hidden, cx)
+
