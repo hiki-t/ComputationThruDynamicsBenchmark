@@ -213,9 +213,9 @@ class LSTM_RNN(nn.Module):
         return init_h + ic_noise
 
     def init_cx(self, batch_size):
-        init_cx = self.latent_ics2.unsqueeze(0).expand(batch_size, -1)
-        ic_noise = torch.randn_like(init_cx) * self.latent_ic_var
-        return init_cx + ic_noise
+        init_c = self.latent_ics2.unsqueeze(0).expand(batch_size, -1)
+        ic_noise = torch.randn_like(init_c) * self.latent_ic_var
+        return init_c + ic_noise
 
     def forward(self, inputs, hidden_cx):
         hidden, cx = hidden_cx # Unpack the tuple into hx and cx
