@@ -180,6 +180,8 @@ class TaskTrainedWrapper(pl.LightningModule):
                 controlled.append(action)
                 actions.append(action)
 
+            if isinstance(hidden, tuple):
+                hidden, cx = hidden
             latents.append(hidden)
             count += 1
 
