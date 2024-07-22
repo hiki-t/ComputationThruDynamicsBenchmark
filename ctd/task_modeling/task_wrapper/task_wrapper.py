@@ -128,6 +128,12 @@ class TaskTrainedWrapper(pl.LightningModule):
         else:
             hidden = torch.zeros(batch_size, self.latent_size).to(self.device)
 
+        if hasattr(self.model, "init_cx"):
+            cx = self.model.init_cx(batch_size=batch_size).to(self.device)
+            hidden_cx = (hidden,cx)
+        else:
+            hidden_cx = None
+            
         latents = []  # Latent activity of TT model
         controlled = []  # Variable controlled by model
         actions = []  # Actions taken by model (sometimes = controlled)
@@ -147,7 +153,11 @@ class TaskTrainedWrapper(pl.LightningModule):
                     model_input + torch.randn_like(model_input) * self.dynamic_noise
                 )
             # Produce an action and a hidden state
-            action, hidden = self.model(model_input, hidden)
+            # if the hidden_cx exists
+            if hidden_cx:
+                action, hidden = self.model(model_input, hidden_cx)
+            else:
+                action, hidden = self.model(model_input, hidden)
 
             # Apply action to environment (for coupled)
             if self.task_env.coupled_env:
