@@ -222,4 +222,3 @@ class LSTM_RNN(nn.Module):
         hidden, cx = self.cell(inputs, (hidden,cx))
         output = self.readout(hidden)
         return output, (hidden, cx)
-
