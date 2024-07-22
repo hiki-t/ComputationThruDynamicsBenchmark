@@ -226,4 +226,4 @@ class LSTM_RNN(nn.Module):
         else:
             hidden, cx = self.cell(inputs, hidden_cx)
             output = self.readout(hidden)
-            return output, hidden_cx
+            return output, hidden
