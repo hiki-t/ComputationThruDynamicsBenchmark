@@ -217,7 +217,8 @@ class LSTM_RNN(nn.Module):
         ic_noise = torch.randn_like(init_cx) * self.latent_ic_var
         return init_cx + ic_noise
 
-    def forward(self, inputs, (hidden,cx)):
+    def forward(self, inputs, hidden_cx):
+        hidden, cx = hidden_cx # Unpack the tuple into hx and cx
         hidden, cx = self.cell(inputs, (hidden,cx))
         output = self.readout(hidden)
         return output, (hidden, cx)
