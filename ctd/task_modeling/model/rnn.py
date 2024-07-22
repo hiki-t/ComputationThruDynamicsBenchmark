@@ -218,12 +218,12 @@ class LSTM_RNN(nn.Module):
         return init_c + ic_noise
 
     def forward(self, inputs, hidden_cx):
-        if isinstance(hidden_cx, tuple):
+        if isinstance(hidden_cx, tuple): # for training
             hidden, cx = hidden_cx # Unpack the tuple into hx and cx
             hidden, cx = self.cell(inputs, (hidden,cx))
             output = self.readout(hidden)
             return output, (hidden,cx)
-        else:
+        else: # for validation or testing, etc
             hidden, cx = self.cell(inputs, hidden_cx)
             output = self.readout(hidden)
             return output, hidden
