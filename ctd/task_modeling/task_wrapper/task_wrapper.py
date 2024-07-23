@@ -86,7 +86,13 @@ class TaskTrainedWrapper(pl.LightningModule):
         # - inputs: composed of env_states and context_inputs
         # - rnn_hidden: hidden state of the RNN
         inputs = torch.hstack((env_states, context_inputs))
+        
+        # if hasattr(self.model, "init_cx"):
+        #     action, rnn_hidden, cx = self.model(inputs, rnn_hidden)
+        # else:
+        #     action, rnn_hidden = self.model(inputs, rnn_hidden)
         action, rnn_hidden = self.model(inputs, rnn_hidden)
+        
         self.task_env.reset(
             batch_size=env_states.shape[0], options={"ic_state": joint_state}
         )
@@ -113,6 +119,7 @@ class TaskTrainedWrapper(pl.LightningModule):
         # If a coupled environment, set the environment state
         if self.task_env.coupled_env:
             options = {"ic_state": ics}
+            # initiate env
             env_states, info = self.task_env.reset(
                 batch_size=batch_size, options=options
             )
@@ -135,6 +142,7 @@ class TaskTrainedWrapper(pl.LightningModule):
             hidden_cx = None
             
         latents = []  # Latent activity of TT model
+        cxs = [] # cell state for LSTM
         controlled = []  # Variable controlled by model
         actions = []  # Actions taken by model (sometimes = controlled)
 
@@ -152,10 +160,12 @@ class TaskTrainedWrapper(pl.LightningModule):
                 model_input = (
                     model_input + torch.randn_like(model_input) * self.dynamic_noise
                 )
+                
             # Produce an action and a hidden state
             # if the hidden_cx exists
             if hidden_cx:
-                action, hidden = self.model(model_input, hidden_cx)
+                action, hidden_cx = self.model(model_input, hidden_cx)
+                hidden, cx = hidden_cx
             else:
                 action, hidden = self.model(model_input, hidden)
 
@@ -179,16 +189,20 @@ class TaskTrainedWrapper(pl.LightningModule):
             else:
                 controlled.append(action)
                 actions.append(action)
-
-            if isinstance(hidden, tuple):
-                hidden, cx = hidden
+            
             latents.append(hidden)
+            cxs.append(cx)
+            
+            if hidden_cx:
+                hidden_cx = (latents,cxs)
             count += 1
 
         # Compile outputs
         controlled = torch.stack(controlled, dim=1)
         latents = torch.stack(latents, dim=1)
         actions = torch.stack(actions, dim=1)
+        cxs = torch.stack(cxs, dim=1)
+        
         if self.task_env.coupled_env:
             states = torch.stack(env_state_list, dim=1)
             joints = torch.stack(joints, dim=1)
