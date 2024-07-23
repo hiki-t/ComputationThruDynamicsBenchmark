@@ -47,7 +47,8 @@ class TaskTrainedWrapper(pl.LightningModule):
         self.output_size = output_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
-        self.loss_hist = []
+        self.train_loss_hist = []
+        self.val_loss_hist = []
 
         self.save_hyperparameters()
 
@@ -203,7 +204,10 @@ class TaskTrainedWrapper(pl.LightningModule):
         controlled = torch.stack(controlled, dim=1)
         latents = torch.stack(latents, dim=1)
         actions = torch.stack(actions, dim=1)
-        cxs = torch.stack(cxs, dim=1)
+        if hidden_cx:
+            cxs = torch.stack(cxs, dim=1)
+        else:
+            cxs = None
         
         if self.task_env.coupled_env:
             states = torch.stack(env_state_list, dim=1)
@@ -218,6 +222,7 @@ class TaskTrainedWrapper(pl.LightningModule):
             "actions": actions,
             "states": states,
             "joints": joints,
+            "cxs": cxs,
         }
         return output_dict
 
@@ -243,12 +248,13 @@ class TaskTrainedWrapper(pl.LightningModule):
             "conds": conds,
             "extra": extras,
             "epoch": self.current_epoch,
+            # "cxs": output_dict["cxs"],
         }
 
         # Compute the loss using the loss function object
         loss_all = self.loss_func(loss_dict)
+        self.train_loss_hist.append(loss_all)
         self.log("train/loss", loss_all)
-        self.loss_hist.append(loss_all) # <-- This is the only change!
         return loss_all
 
     def validation_step(self, batch, batch_ix):
@@ -272,9 +278,11 @@ class TaskTrainedWrapper(pl.LightningModule):
             "conds": conds,
             "extra": extras,
             "epoch": self.current_epoch,
+            # "cxs": output_dict["cxs"],
         }
 
         # Compute the loss using the loss function object
         loss_all = self.loss_func(loss_dict)
+        self.val_loss_hist.append(loss_all)
         self.log("valid/loss", loss_all)
         return loss_all
