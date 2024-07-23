@@ -246,6 +246,7 @@ class TaskTrainedWrapper(pl.LightningModule):
         # Compute the loss using the loss function object
         loss_all = self.loss_func(loss_dict)
         self.log("train/loss", loss_all)
+        self.loss_hist.append(loss_all) # <-- This is the only change!
         return loss_all
 
     def validation_step(self, batch, batch_ix):
