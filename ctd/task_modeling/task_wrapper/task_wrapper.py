@@ -47,6 +47,7 @@ class TaskTrainedWrapper(pl.LightningModule):
         self.output_size = output_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.loss_hist = []
 
         self.save_hyperparameters()
 
