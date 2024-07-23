@@ -192,10 +192,11 @@ class TaskTrainedWrapper(pl.LightningModule):
                 actions.append(action)
             
             latents.append(hidden)
-            cxs.append(cx)
+
             
             if hidden_cx:
                 hidden_cx = (hidden,cx)
+                cxs.append(cx)
             count += 1
 
         # Compile outputs
